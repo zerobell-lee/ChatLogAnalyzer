@@ -4,6 +4,7 @@ from operator import itemgetter
 from konlpy.tag import Kkma
 from konlpy.tag import Twitter
 from konlpy.tag import Hannanum
+from konlpy.tag import Mecab
 from konlpy.utils import pprint
 import time
 
@@ -145,10 +146,11 @@ def analyze_i(lines):
 
     while True:
         name = input("name?")
-        nouns = Hannanum().nouns(surplus_dict[name])
+        print("len of nouns : ", len(surplus_dict[name]))
+        nouns = Mecab().nouns(surplus_dict[name])
         #가장 많이 언급된 단어를 선별하는 클래스. KoNLPy에 정의된 다른 클래스를 사용해도 된다.
         print(name, "-------------")
-        pprint(Counter(nouns).most_common(10))
+        pprint(Counter(nouns).most_common(100))
         print("====================\n")
         time.sleep(5)
 
