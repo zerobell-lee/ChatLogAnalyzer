@@ -1,15 +1,18 @@
+#-*- coding:utf-8 -*-
 import codecs
 from collections import Counter
 from operator import itemgetter
-from konlpy.tag import Kkma
-from konlpy.tag import Twitter
-from konlpy.tag import Hannanum
-from konlpy.tag import Mecab
-from konlpy.utils import pprint
+from WordAnalyzer import WordAnalyzer
 import time
 
+memberDict = dict()
+timeDict = dict()
+pictureDict = dict()
+
+
 def surplusamount(lines):
-    surplus_dict = dict()
+    global memberDict
+    global pictureDict
     line_row = -1
     bunch = ''
     b_name = ''
@@ -27,23 +30,23 @@ def surplusamount(lines):
             if (bunch == ''):
                 continue
             else:
-                if b_name in list(surplus_dict.keys()):
-                    surplus_dict.update({ b_name : surplus_dict[b_name] + len(bunch)})
+                if b_name in list(memberDict.keys()):
+                    memberDict.update({ b_name : memberDict[b_name] + ' ' + bunch})
                 else:
-                    surplus_dict.update({ b_name : len(bunch)})
+                    memberDict.update({ b_name : bunch})
                 bunch = ''
                 b_name = ''
                 continue
-                #bunch는 말뭉치. 즉, 여러줄로 구성된 대화. b_name은 해당 bunch를 발언한 대화자.
+                #bunch는 여러줄로 구성된 대화. b_name은 해당 bunch를 발언한 대화자.
                 
         if (bunch != ''):
             if (line[-2:-1] == '\r'):
                 bunch = bunch + line.split('\r\n')[0]
                 
-                if b_name in list(surplus_dict.keys()):
-                    surplus_dict.update({ b_name : surplus_dict[b_name] + len(bunch)})
+                if b_name in list(memberDict.keys()):
+                    memberDict.update({ b_name : memberDict[b_name] + ' ' + bunch})
                 else:
-                    surplus_dict.update({ b_name : len(bunch)})
+                    memberDict.update({ b_name : bunch})
                 bunch = ''
                 b_name = ''
                 continue
@@ -52,121 +55,67 @@ def surplusamount(lines):
 
         string = line.split(':')
         if (len(string)<3): continue
-        
+       
+        #이름 취득 
         name = string[1]
         name = name.split(',')
         name = name[1]
         name = name[1:-1]
         
-        text = ''
+        text = '' 
         for i in range(2,len(string)):
-            text = text + string[i]
+            text = text + ':' + string[i]
 
         if (text[-2:-1] != '\r') and (text[-1:] == '\n'):
             bunch = text[0:-1]
             b_name = name
             continue
-        else:
-            text = text.split('\r\n')[0]
-            text = text[1:]
-
-            if name in list(surplus_dict.keys()):
-                surplus_dict.update({ name : surplus_dict[name] + len(text)})
+        text = text.split('\r\n')[0]
+        text = text[1:]
+        if text == ' <사진>':
+            if name in list(pictureDict.keys()):
+                pictureDict.update({ name : pictureDict[name] + 1})
             else:
-                surplus_dict.update({ name : len(text)})
+                pictureDict.update({ name : 1})
+            continue
+        else:
+
+            if name in list(memberDict.keys()):
+                memberDict.update({ name : memberDict[name] + ' ' + text})
+            else:
+                memberDict.update({ name : text})
 
     print("잉여력 측정 결과입니다.")
 
     
-    for name in sorted(surplus_dict.items(), key=itemgetter(1), reverse=True):
-        print(name[0], ":", name[1])
+    for name in sorted(memberDict.items(), key=lambda e: len(e[1]), reverse=True):
+        print(name[0], ":", len(name[1]))
 
-def analyze_i(lines):
-    surplus_dict = dict()
-    line_row = -1
-    bunch = ''
-    b_name = ''
-    
-    for line in lines:
-        line_row += 1
-        if (line_row < 5 ):
-            continue
-        
-        if (line == '\r\n'):
-            if (bunch == ''):
-                continue
-            else:
-                if b_name in list(surplus_dict.keys()):
-                    surplus_dict.update({ b_name : surplus_dict[b_name] + bunch})
-                else:
-                    surplus_dict.update({ b_name : bunch})
-                bunch = ''
-                b_name = ''
-                continue
-                
-        if (bunch != ''):
-            if (line[-2:-1] == '\r'):
-                bunch = bunch + ' ' + line.split('\r\n')[0]
-                
-                if b_name in list(surplus_dict.keys()):
-                    surplus_dict.update({ b_name : surplus_dict[b_name] + bunch})
-                else:
-                    surplus_dict.update({ b_name : bunch})
-                bunch = ''
-                b_name = ''
-                continue
-            bunch = bunch + ' ' + line.split('\n')[0]
-
-            continue
-
-        string = line.split(':')
-        if (len(string)<3): continue
-        
-        name = string[1]
-        name = name.split(',')
-        name = name[1]
-        name = name[1:-1]
-        
-        text = ''
-        for i in range(2,len(string)):
-            text = text + string[i]
-
-        if (text[-2:-1] != '\r') and (text[-1:] == '\n'):
-            bunch = text[0:-1]
-            b_name = name
-            continue
-        else:
-            text = text.split('\r\n')[0]
-            text = text[1:]
-
-            if name in list(surplus_dict.keys()):
-                surplus_dict.update({ name : surplus_dict[name] + ' ' + text})
-            else:
-                surplus_dict.update({ name : text })
+def analyze_i():
+    global memberDict
+    w = WordAnalyzer()
 
     while True:
         name = input("name?")
-        print("len of nouns : ", len(surplus_dict[name]))
-        nouns = Mecab().nouns(surplus_dict[name])
+        nouns = [t[0] for t in w.filter(memberDict[name], ['NNP', 'NNG', 'VV', 'VA', 'IC', 'VA'])]
         #가장 많이 언급된 단어를 선별하는 클래스. KoNLPy에 정의된 다른 클래스를 사용해도 된다.
         print(name, "-------------")
-        pprint(Counter(nouns).most_common(100))
+        for e in Counter(nouns).most_common(100):
+            print(e, end='\n')
         print("====================\n")
-        time.sleep(5)
 
         
 
 
 def main():
     path = input("path : ")
-    f = codecs.open(path, 'r', 'utf-8')
+    f = codecs.open(path, 'r', 'utf-8', errors='ignore')
     slist = f.readlines()
     f.close()
 
     surplusamount(slist)
     #단순히 대화 '양'만을 측정하는 메소드.
-    analyze_i(slist)
-    #KoNLPy를 이용하여 가장 많이 언급한 키워드 10개를 선별하는 메소드.
+    analyze_i()
 
 main()
     
