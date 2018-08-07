@@ -4,7 +4,7 @@ class WordAnalyzer():
     def __init__(self, dic='/usr/local/lib/mecab/dic/mecab-ko-dic'):
         self.dic = dic
         self.m = MeCab.Tagger('-d ' + dic)
-    def filter(self, source, filter):
+    def filter(self, source, filter, exception=[]):
         result = []
         flag = False
         node =  self.m.parseToNode(source)
@@ -29,7 +29,8 @@ class WordAnalyzer():
                         surface = 'ㅎㅎ'
                     elif surface[0]=='ㅠ':
                         surface = 'ㅠㅠ'
-                    result.append((surface, feature))
+                    if surface not in exception:
+                        result.append((surface, feature))
             except UnicodeDecodeError as e:
                 pass
             except IndexError as e:

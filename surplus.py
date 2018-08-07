@@ -9,6 +9,8 @@ memberDict = dict()
 timeDict = dict()
 pictureDict = dict()
 
+filter = ['NNP', 'NNG', 'VV', 'VA', 'IC']
+exception = ['하다', '되다', 'ㅋㅋ']
 
 def surplusamount(lines):
     global memberDict
@@ -41,7 +43,7 @@ def surplusamount(lines):
                 
         if (bunch != ''):
             if (line[-2:-1] == '\r'):
-                bunch = bunch + line.split('\r\n')[0]
+                bunch = bunch + ' ' + line.split('\r\n')[0]
                 
                 if b_name in list(memberDict.keys()):
                     memberDict.update({ b_name : memberDict[b_name] + ' ' + bunch})
@@ -50,7 +52,7 @@ def surplusamount(lines):
                 bunch = ''
                 b_name = ''
                 continue
-            bunch = bunch + line.split('\n')[0]
+            bunch = bunch + ' ' + line.split('\n')[0]
             continue
 
         string = line.split(':')
@@ -68,6 +70,7 @@ def surplusamount(lines):
 
         if (text[-2:-1] != '\r') and (text[-1:] == '\n'):
             bunch = text[0:-1]
+            bunch = bunch[2:]
             b_name = name
             continue
         text = text.split('\r\n')[0]
@@ -97,11 +100,11 @@ def analyze_i():
 
     while True:
         name = input("name?")
-        nouns = [t[0] for t in w.filter(memberDict[name], ['NNP', 'NNG', 'VV', 'VA', 'IC', 'VA'])]
+        nouns = [t[0] for t in w.filter(memberDict[name], filter, exception)]
         #가장 많이 언급된 단어를 선별하는 클래스. KoNLPy에 정의된 다른 클래스를 사용해도 된다.
         print(name, "-------------")
-        for e in Counter(nouns).most_common(100):
-            print(e, end='\n')
+        for e in Counter(nouns).most_common(50):
+            print(e[1], e[0], end='\n')
         print("====================\n")
 
         
