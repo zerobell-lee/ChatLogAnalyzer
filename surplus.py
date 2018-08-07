@@ -3,12 +3,16 @@ import codecs
 from collections import Counter
 from operator import itemgetter
 from WordAnalyzer import WordAnalyzer
-import time
+import json
+import os
 
 memberDict = dict()
 hourDict = dict()
 monthDict = dict()
 pictureDict = dict()
+
+WORKDIR =  os.path.dirname(os.path.realpath(__file__))
+OUTPUTDIR = ''
 
 filter = ['NNP', 'NNG', 'VV', 'VA', 'IC']
 exception = ['하다', '되다', 'ㅋㅋ']
@@ -36,7 +40,8 @@ def parseMonthTime(line):
         else:
             hour = int(timestamp[0])
 
-    yearMonth = str(year) + '-' + str(month)
+    month = '0' + str(month) if (month<10) else str(month)
+    yearMonth = str(year) + '-' + month
     hour = '0' + str(hour) if (hour<10) else str(hour)
 
     return (yearMonth, hour)
@@ -47,6 +52,8 @@ def surplusamount(lines):
     global pictureDict
     global monthDict
     global hourDict
+    global OUTPUTDIR
+
     line_row = -1
     bunch = ''
     b_name = ''
@@ -124,7 +131,7 @@ def surplusamount(lines):
         name = name[1]
         name = name[1:-1]
 
-        yearMonth, hour = parseMonthTime(string[0] + string[1])
+        yearMonth, hour = parseMonthTime(string[0] + ':' + string[1])
         
         text = '' 
         for i in range(2,len(string)):
@@ -162,11 +169,15 @@ def surplusamount(lines):
             else:
                 hourDict.update({ hour : len(text)})
 
-    print("잉여력 측정 결과입니다.")
-
-    
-    for name in sorted(memberDict.items(), key=lambda e: len(e[1]), reverse=True):
-        print(name[0], ":", len(name[1]))
+    total_amount = dict()
+    for names in sorted(memberDict.items(), key=lambda e: len(e[1]), reverse=True):
+        total_amount.update({ names[0] : len(names[1])})
+    with open(OUTPUTDIR + '/total_amount.json', 'w', encoding='utf-8') as make_file:
+        json.dump(total_amount, make_file, ensure_ascii=False, indent='\t')
+    with open(OUTPUTDIR + '/hour.json', 'w', encoding='utf-8') as make_file:
+        json.dump(hourDict, make_file, ensure_ascii=False, indent='\t')
+    with open(OUTPUTDIR + '/month.json', 'w', encoding='utf-8') as make_file:
+        json.dump(monthDict, make_file, ensure_ascii=False, indent='\t')
 
 def analyze_i():
     global memberDict
@@ -175,20 +186,41 @@ def analyze_i():
     for name in sorted(memberDict.items(), key=lambda e: len(e[1]), reverse=True):
         nouns = [t[0] for t in w.filter(name[1], filter, exception)]
         #가장 많이 언급된 단어를 선별하는 클래스. KoNLPy에 정의된 다른 클래스를 사용해도 된다.
-        print(name[0], "-------------")
-        for e in Counter(nouns).most_common(50):
-            print(e[1], e[0], end='\n')
-        print("====================\n")
+        with open(OUTPUTDIR + '/' + name[0] + '.json', 'w', encoding='utf-8') as make_file:
+            json.dump(Counter(nouns).most_common(50), make_file, ensure_ascii=False, indent='\t')
 
         
 
 
 def main():
+    global OUTPUTDIR
     path = input("path : ")
+    filename = path.split('/')[-1].split('.')[0]
     f = codecs.open(path, 'r', 'utf-8', errors='ignore')
     slist = f.readlines()
     f.close()
 
+    while True:
+        if 'result' in os.listdir(WORKDIR):
+            if os.path.isdir(WORKDIR + '/result'):
+                tag = 1
+                if filename in os.listdir(WORKDIR + '/result'):
+                    orig = filename
+                    while filename in os.listdir(WORKDIR + '/result'):
+                        filename = orig + '(' + str(tag) + ')'
+                        tag += 1
+                OUTPUTDIR = WORKDIR + '/result/' + filename
+                os.mkdir(OUTPUTDIR)
+                break
+            else:
+                print("Error : ", WORKDIR, '/result already exists. But it is not a directory')
+                exit()
+        else:
+            os.mkdir(WORKDIR + '/result')
+            continue
+
+    print('WORKDIR : ', WORKDIR, '\nOUTPUTDIR : ', OUTPUTDIR)
+                
     surplusamount(slist)
     #단순히 대화 '양'만을 측정하는 메소드.
     analyze_i()
