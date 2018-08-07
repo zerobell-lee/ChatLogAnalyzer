@@ -15,7 +15,7 @@ WORKDIR =  os.path.dirname(os.path.realpath(__file__))
 OUTPUTDIR = ''
 
 filter = ['NNP', 'NNG', 'VV', 'VA', 'IC']
-exception = ['하다', '되다', 'ㅋㅋ']
+exception = []
 
 
 def parseMonthTime(line):
@@ -41,7 +41,8 @@ def parseMonthTime(line):
             hour = int(timestamp[0])
 
     month = '0' + str(month) if (month<10) else str(month)
-    yearMonth = str(year) + '-' + month
+    day = '0' + str(day) if (day<10) else str(day)
+    yearMonth = str(year) + '-' + month + '-' + day
     hour = '0' + str(hour) if (hour<10) else str(hour)
 
     return (yearMonth, hour)
