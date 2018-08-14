@@ -1,7 +1,6 @@
 #-*- coding:utf-8 -*-
 import codecs
 from collections import Counter
-from operator import itemgetter
 from WordAnalyzer import WordAnalyzer
 import json
 import os
@@ -14,8 +13,14 @@ pictureDict = dict()
 WORKDIR =  os.path.dirname(os.path.realpath(__file__))
 OUTPUTDIR = ''
 
-filter = ['NNP', 'NNG', 'VV', 'VA', 'IC']
+filter = ['NNP', 'NNG', 'IC']
 exception = []
+
+def toList(d1):
+    result = []
+    for e in d1.items():
+        result.append([e[0], e[1]])
+    return result
 
 
 def parseMonthTime(line):
@@ -170,15 +175,15 @@ def surplusamount(lines):
             else:
                 hourDict.update({ hour : len(text)})
 
-    total_amount = dict()
+    total_amount = [] 
     for names in sorted(memberDict.items(), key=lambda e: len(e[1]), reverse=True):
-        total_amount.update({ names[0] : len(names[1])})
+        total_amount.append([ names[0] , len(names[1])])
     with open(OUTPUTDIR + '/total_amount.json', 'w', encoding='utf-8') as make_file:
         json.dump(total_amount, make_file, ensure_ascii=False, indent='\t')
     with open(OUTPUTDIR + '/hour.json', 'w', encoding='utf-8') as make_file:
-        json.dump(hourDict, make_file, ensure_ascii=False, indent='\t')
+        json.dump(toList(hourDict), make_file, ensure_ascii=False, indent='\t')
     with open(OUTPUTDIR + '/month.json', 'w', encoding='utf-8') as make_file:
-        json.dump(monthDict, make_file, ensure_ascii=False, indent='\t')
+        json.dump(toList(monthDict), make_file, ensure_ascii=False, indent='\t')
 
 def analyze_i():
     global memberDict
@@ -186,6 +191,10 @@ def analyze_i():
 
     for name in sorted(memberDict.items(), key=lambda e: len(e[1]), reverse=True):
         nouns = [t[0] for t in w.filter(name[1], filter, exception)]
+        print(name[0], '----------------')
+        for e in Counter(nouns).most_common(50):
+            print(e, end='\n')
+        print('========================')
         #가장 많이 언급된 단어를 선별하는 클래스. KoNLPy에 정의된 다른 클래스를 사용해도 된다.
         with open(OUTPUTDIR + '/' + name[0] + '.json', 'w', encoding='utf-8') as make_file:
             json.dump(Counter(nouns).most_common(50), make_file, ensure_ascii=False, indent='\t')
