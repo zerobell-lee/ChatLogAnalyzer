@@ -1,0 +1,4 @@
+pkg-resources==0.0.0
+pybind11==2.2.4
+PyMySQL==0.9.3
+python-mecab-ko==1.0.4
